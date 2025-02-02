@@ -23,13 +23,10 @@ nest_asyncio.apply()
 
 _ = load_dotenv()
 
-Settings.llm = OpenAI(model="gpt-4o-mini", 
-                      temperature=0.2)
-
-Settings.embed_model = OpenAIEmbedding(
-    model_name="text-embedding-3-small"
-)
-
+Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.2)
+                      
+Settings.embed_model = OpenAIEmbedding(model_name="text-embedding-3-small")
+    
 PERSIST_DIR = "./vector_db"
 
 def get_query_engine():
