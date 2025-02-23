@@ -7,8 +7,9 @@ nest_asyncio.apply()
 from ingest_documents import ingest_documents
 from kb_agents import RagAgent, agent_rag_tool, query_kb
 from document_processor import parse_and_summerise_document, list_files_in_directory, generate_sensible_questions
+import pandas as pd
 
-st.set_page_config(layout="wide")  # Enable wide mode for the app
+st.set_page_config(layout="wide")
 
 def sanitize_filename(filename):
     """
@@ -45,6 +46,7 @@ async def get_answer_from_kb(query):
 PERSIST_DIR = "./vector_db"
 SUMMERISED_DIR = "./doc_summery/"
 UPLOADED_DIR = "./uploaded_docs/files/"
+QUESTIONS_DIR = "./generated_questions/"
 
 st.title("Welcome to Spaces.ai")
 st.write("Agentic system to manage your documents!")
@@ -67,30 +69,47 @@ with st.sidebar:
     )
 
 if add_radio == "home":
-    st.write("## Home Page")
+
+    left_col, right_col = st.columns([3, 2])
     
-    # Use full screen layout with columns
-    left_col, right_col = st.columns([3, 2])  # Adjust column widths
-    
-    with left_col:
+    with right_col:
         st.header("Uploaded Documents")
         files = list_files_in_directory(UPLOADED_DIR)
         if files:
             selected_file = st.radio("Select a file:", options=files, key="selected_file")
-            summerise_checkbox = st.checkbox("Summarise")
+            summerise_checkbox = st.checkbox("Summarize")
             questions_checkbox = st.checkbox("Generate Questions")
         else:
             st.write("No uploaded documents.")
         
-    with right_col:
+    with left_col:
         if selected_file and summerise_checkbox:
-            st.header("Document Summarised")
-            summerised_text = parse_and_summerise_document(selected_file)
-            st.write(summerised_text)
+            st.header("Document Summarized")
+            file_name = os.path.basename(selected_file)
+            st.write(file_name)
+            summerised_text = None
+            try:
+                summerised_text = open(SUMMERISED_DIR + file_name + ".md", "r").read()
+            except FileNotFoundError:
+                pass
+            if summerised_text:
+                st.write(summerised_text)
+            else:
+                summerised_text = parse_and_summerise_document(selected_file)
+                st.write(summerised_text)
         elif selected_file and questions_checkbox:
             st.header("Document Questions")
-            questions_df = generate_sensible_questions(selected_file)
-            st.dataframe(questions_df)  # Use a table for better visualization
+            file_name = os.path.basename(selected_file)
+            questions_df = None
+            try:
+                questions_df = pd.read_csv(QUESTIONS_DIR + file_name + ".csv")
+            except FileNotFoundError:
+                pass
+            if questions_df is not None and not questions_df.empty:
+                st.dataframe(questions_df)
+            else:
+                questions_df = generate_sensible_questions(selected_file)
+                st.dataframe(questions_df)
 
 elif add_radio == "upload your documents":
     st.write("## Upload Your Documents")

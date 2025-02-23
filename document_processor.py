@@ -11,11 +11,20 @@ _ = load_dotenv()
 llm = OpenAI(model="gpt-4o-mini", temperature=0.2)
 resoning_llm = OpenAI(model="o3-mini", temperature=1.0, reasoning_effort="medium")
 
+parser = LlamaParse(
+    result_type="markdown",
+    use_vendor_multimodal_model=True,
+    vendor_multimodal_model_name="gemini-2.0-flash-001",
+    invalidate_cache=True,
+    parsing_instruction="",
+)
+
 summerised_document_path = "./doc_summery"
+questions_path = "./generated_questions/"
 
 def parse_document(file_path: str) -> str:
     """Parse the document and return the text content."""
-    documents = LlamaParse(result_type="markdown").load_data(file_path)
+    documents = parser.load_data(file_path)
     # convert the documents to a string
     text = "\n".join([doc.text for doc in documents])
     return text
@@ -32,6 +41,9 @@ def generate_sensible_questions(file_path: str) -> List[str]:
     questions_df = pd.DataFrame({"questions": questions.split("\n")})
     # remove any null questions or empty questions or questions that are not strings
     questions_df = questions_df[questions_df["questions"].notna()]
+    # save the questions to a csv file
+    os.makedirs(questions_path, exist_ok=True)
+    questions_df.to_csv(os.path.join(questions_path, os.path.basename(file_path) + ".csv"), index=False)
     return questions_df
 
 def summerise_document(text: str) -> str:
